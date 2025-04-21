@@ -1,0 +1,49 @@
+---thêm thông tin khách thuê
+go
+create procedure addnguoithuephong
+    @p_id int,
+    @ntp_tenkhach varchar(100),
+    @ntp_anhcancuoc varbinary(max),
+    @ntp_sodienthoai varchar(15),
+    @ntp_tentaikhoan varchar(50),
+    @ntp_matkhau varchar(100)
+as
+begin
+    insert into nguoithuephong (p_id, ntp_tenkhach, ntp_anhcancuoc, ntp_sodienthoai, ntp_tentaikhoan, ntp_matkhau)
+    values (@p_id, @ntp_tenkhach, @ntp_anhcancuoc, @ntp_sodienthoai, @ntp_tentaikhoan, @ntp_matkhau);
+end
+go
+---- sửa thôgn tin người thuê
+create procedure updatenguoithuephong
+    @ntp_idnguoithuephong int,
+    @p_id int,
+    @ntp_tenkhach varchar(100),
+    @ntp_anhcancuoc varbinary(max),
+    @ntp_sodienthoai varchar(15),
+    @ntp_tentaikhoan varchar(50),
+    @ntp_matkhau varchar(100)
+as
+begin
+    update nguoithuephong
+    set 
+        p_id = @p_id,
+        ntp_tenkhach = @ntp_tenkhach,
+        ntp_anhcancuoc = @ntp_anhcancuoc,
+        ntp_sodienthoai = @ntp_sodienthoai,
+        ntp_tentaikhoan = @ntp_tentaikhoan,
+        ntp_matkhau = @ntp_matkhau
+    where ntp_idnguoithuephong = @ntp_idnguoithuephong;
+end
+go
+-------tìm khách thuê
+create procedure searchnguoithuephong
+    @searchterm varchar(100)
+as
+begin
+    select *
+    from nguoithuephong
+    where ntp_tenkhach like '%' + @searchterm + '%'
+       or ntp_sodienthoai like '%' + @searchterm + '%'
+       or ntp_tentaikhoan like '%' + @searchterm + '%';
+end
+go

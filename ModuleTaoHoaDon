@@ -1,0 +1,61 @@
+/** Đặc tả:
+input : N/A
+output : Thêm dữ liệu vào bảng hóa đơn
+proces: 1. Tạo hóa đơn cho phòng
+		2. Lấy mã phòng lớn nhất
+		3. thực hiện kiểm tra tất cả các phòng bằng while khi P_id chưa vượt qua mã phòng lớn nhất
+			2.1. nếu có người thuê ở phòng đó:
+				-Lấy mã hóa đơn mới bằng cách lấy mã hóa đơn lớn nhất hiện có + 1
+				-Lấy ngày hiện tại khi tạo hóa đơn getdate()
+				-Lấy số tiền thuê phòng từ phòng tương ứng
+				-Tính tổng số tiền từ bảng HD_DV + P_tienphong
+				-Thêm BHD_trangthai = 0 vì chưa thanh toán
+				-Thêm Hóa Đơn vào BangHoaDon
+			2.2 nếu không có người thuê:
+				- P_id = P_id + 1
+
+**/
+go
+create or alter proc ThemHoaDon 
+as
+begin
+	declare @BHD_idbanghoadon int, @P_idphong int = 1, @BHD_ngaylaphoadon date, @BHD_tongsotien int, @BHD_tienphong int, @BHD_trangthai int = 0
+	declare @slp int, @slhd int, @ttp int
+	
+	select @slp = (select top 1 p_id
+				   from phong
+				   order by p_id desc)
+	
+	select @slhd = (select top 1 BHD_idbanghoadon
+				   from BangHoaDon
+				   order by BHD_idbanghoadon desc)
+
+	while @P_idphong <= @slp
+		begin
+			select @ttp = (select P_tinhtrangphong
+					   from phong
+					   where P_id= @P_idphong)
+			if @ttp = 1
+				begin
+					set @BHD_idbanghoadon = @slhd+1
+					set @BHD_ngaylaphoadon = getdate()
+					select @BHD_tienphong = (select P_giaphong
+											 from phong
+											 where P_id = @P_idphong)
+					select @BHD_tongsotien = (select sum(soluong*tiendichvu)
+											  from HoaDonDichVu 
+											  join BangHoaDon on HoaDonDichVu.BHD_idBanghoadon = BangHoaDon.BHD_idBanghoadon
+											  join HD_DV on HD_DV.HDDV_idhoadondichvu = HoaDonDichVu.HDDV_idhoadondichvu
+											  where HoaDonDichVu.BHD_idBanghoadon = @BHD_idbanghoadon)
+					set @BHD_tongsotien = @BHD_tongsotien +  @BHD_tienphong
+					insert into BangHoaDon (BHD_idbanghoadon, P_id, BHD_ngaylaphoadon, BHD_tongsotien, BHD_tienphong, BHD_TRANGTHAI) 
+					values (@BHD_idbanghoadon, @P_idphong, @BHD_ngaylaphoadon, @BHD_tongsotien, @BHD_tienphong , @BHD_trangthai)
+					set @P_idphong = @P_idphong +1
+				end
+			else
+				set @P_idphong = @P_idphong +1
+		end
+
+
+end
+

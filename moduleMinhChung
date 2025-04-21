@@ -1,16 +1,29 @@
+
 ---1.Cập nhật trạng thái hóa đơn sau khi đã xác minh minh chứng
-alter table BangHoaDon add TrangThai nvarchar(50)
-create or alter trigger tTrangThaiHD
-on MinhChung
-after insert
+create proc UpdateTrangthai
+    @BHD_id INT,
+    @MC_trangthai int 
 as
 begin
-	update BangHoaDon
-	set Trangthai=N'Đã xác minh'
-	where BHD_idBanghoadon in (select BHD_idBanghoadon from inserted)
+    if exitst (select 1 from BangHoaDon where BHD_idBanghoadon = @BHD_id)
+    begin
+        select @MC_trangthai=MC_trangthai from MinhChung 
+        if @MC_trangthai = 1
+        begin
+            update BangHoaDon
+            set Trangthai = 1
+            where BHD_idBanghoadon = @BHD_id;
+        end
+        else
+        begin
+            update BangHoaDon
+            set Trangthai = 0
+            where BHD_idBanghoadon = @BHD_id;
+        end
+        print 'Trạng thái được cập nhật thành công.';
+    end
 end
 
-select * from BangHoaDon
 
 --2.Kiểm tra tính hợp lệ của dữ liệu (ảnh minh chứng)
 create or alter proc ThemAnhMC
@@ -23,16 +36,16 @@ begin
     if @mc_anhminhchung is not null and substring(@mc_anhminhchung, 1, 2) != 0xffd8 and 
        substring(@mc_anhminhchung, 1, 4) != 0x89504e47
     begin
-        raiserror(N'Ảnh chèn không hợp lệ', 16, 1);
+        print N'Ảnh chèn không hợp lệ'
         return;
-    endM
+    end
     insert into minhchung (MC_id, BHD_idBanghoadon, MC_anhminhchung)
     values (@mc_id, @bhd_idbanghoadon, @mc_anhminhchung);
 end;
 exec ThemAnhMC
 
 
---3,Thêm minh chứng mới
+--3,Thêm minh chứng mới, kiểm tra đã có mã MC và mã HĐ trước đó chưa
 create or alter trigger ThemMC
 on MinhChung
 instead of insert

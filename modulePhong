@@ -1,0 +1,68 @@
+
+--1. Trả về giá phòng nếu biết id phòng 
+go
+create or alter function fgiaphong @idphong int 
+returns int
+as
+begin
+	declare @ret int 
+	set @ret=(select P_giaphong  from Phong  where P_id=@idphong )
+	return @ret
+end
+
+
+
+--2. Trả về thời gian thuê của khách hàng nếu biết mã phòng 
+CREATE PROCEDURE sp_TinhThoiGianThue @maPhong INT
+AS
+BEGIN
+    SELECT P_sophong AS SoPhong ,
+           HD.HD_ngaybatdauThue AS NgayBatDau,
+           HD.HD_thoihanThue AS NgayKetThuc,
+           DATEDIFF(DAY, HD.HD_ngaybatdauThue, HD.HD_thoihanThue) AS SoNgayThue
+    FROM Phong P
+    JOIN HopDong HD ON P.P_id = HD.P_id   
+    WHERE 
+	P.P_id= @maPhong
+END
+
+--3.Kiểm tra khách thuê phòng gần nhất vào tháng mấy
+CREATE PROCEDURE sp_KhachThueGanNhat
+AS
+BEGIN
+    SELECT TOP 1 
+           NTP_tenkhach AS TenKhachHang,
+           MONTH(HD.HD_ngaybatdauThue) AS ThangThue
+    FROM NguoiThuePhong NTP
+    JOIN HopDong HD ON NTP.P_id = HD.P_id
+    ORDER BY HD.HD_ngaybatdauThue DESC 
+END
+
+--update phòng, thêm phòng và kiểm tra giá phòng có đúng trong khoảng 1-2 triệu hay không 
+go
+create or alter trigger add_phong 
+on Phong
+after insert
+as
+begin
+	declare @P_id int , @P_sophong int,@P_giaphong int, @P_tinhtrangphong varchar(50)
+	select @P_id=P_id, @P_sophong=P_sophong, @P_giaphong=P_giaphong,@P_tinhtrangphong=P_tinhtrangphong
+	from inserted
+	if (@P_giaphong<1000000 or @P_giaphong>2000000)
+	begin
+		print N'Giá không phòng hợp lệ'
+		rollback transaction
+		return
+	end
+	else 
+		begin
+			if (@@ROWCOUNT >= 1)
+			begin
+				print N' Thêm phòng thành công'
+			end
+			else 
+				begin
+					print N' Có lỗi, chưa thêm được phòng'
+				end
+		end
+end
